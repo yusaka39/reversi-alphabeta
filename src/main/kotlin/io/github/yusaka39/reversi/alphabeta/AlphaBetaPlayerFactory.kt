@@ -10,6 +10,6 @@ import io.github.yusaka39.reversi.game.interfaces.Player
 
 class AlphaBetaPlayerFactory : AbstractPlayerFactory() {
     override fun create(side: Sides): Player =
-            AlphaBetaPlayer(side, "ALPHA_BETA")
-
+            AlphaBetaPlayer(side, "ALPHA_BETA[$side]",
+                            { it.getCountForSide(side) - it.getCountForSide(side.reverse()) }, 4)
 }

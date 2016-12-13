@@ -6,6 +6,9 @@ import io.github.yusaka39.reversi.game.constants.Sides
 import io.github.yusaka39.reversi.game.interfaces.Player
 import java.util.concurrent.ConcurrentHashMap
 import java.util.concurrent.CountDownLatch
+import java.util.concurrent.Executors
+import java.util.concurrent.ThreadPoolExecutor
+import java.util.concurrent.TimeUnit
 import kotlin.concurrent.thread
 
 /**
@@ -13,21 +16,21 @@ import kotlin.concurrent.thread
  */
 
 class AlphaBetaPlayer(override val side: Sides, override val name: String,
-                      val evaluate: (Board) -> Int, val depth: Int) : Player {
+                      private val evaluate: (Board) -> Int, private val depth: Int) : Player {
 
     override fun handleTurn(board: Board, validMoves: List<Grid>): Grid {
-        val latch = CountDownLatch(validMoves.count())
+        val threadPool = Executors.newFixedThreadPool(Runtime.getRuntime().availableProcessors())
         val treeToScore = ConcurrentHashMap<Node, Int>()
         validMoves.forEach {
-            thread {
+            threadPool.execute {
                 val tree = Node(this.side, it, board.clone().apply {
                     this.put(this@AlphaBetaPlayer.side, it)
                 })
                 treeToScore[tree] = evaluateScore(tree)
-                latch.countDown()
             }
         }
-        latch.await()
+        threadPool.shutdown()
+        threadPool.awaitTermination(1, TimeUnit.MINUTES)
         return treeToScore.maxBy { it.value }!!.key.move
     }
 
